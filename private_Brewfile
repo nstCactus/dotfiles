@@ -1,0 +1,13 @@
+tap "ddev/ddev"
+tap "homebrew/services"
+
+brew "zsh"
+brew "git"
+brew "git-standup"
+brew "thefuck"
+brew "aria2"
+brew "php"
+brew "composer"
+brew "node"
+brew "mkcert"
+brew "yt-dlp"

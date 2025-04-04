@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "🔍 Checking for Homebrew/Linuxbrew installation…"
+
+if command -v brew >/dev/null 2>&1; then
+  echo "✅ Homebrew is already installed."
+else
+  {{ if eq .chezmoi.os "darwin" }}
+  echo "🍎 Installing Homebrew …"
+  NONINTERACTIVE=1 /bin/bash -c \
+    "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  {{ else if eq .chezmoi.os "linux" }}
+  echo "🐧 Installing Linuxbrew…"
+
+  # Install basic build tools
+  if command -v apt >/dev/null 2>&1; then
+    sudo apt-get update
+    sudo apt-get install -y build-essential curl file git
+  elif command -v dnf >/dev/null 2>&1; then
+    sudo dnf install -y @development-tools curl file git
+  elif command -v pacman >/dev/null 2>&1; then
+    sudo pacman -Sy --needed base-devel curl file git
+  else
+    echo "❌ Unsupported package manager. Install build tools manually."
+    exit 1
+  fi
+
+  NONINTERACTIVE=1 /bin/bash -c \
+    "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  {{ end }}
+  echo "✅ Homebrew installed."
+fi
+
+# Set up Brewfile path
+BREWFILE="{{ .chezmoi.sourceDir }}/private_Brewfile"
+
+if [[ -f "$BREWFILE" ]]; then
+  echo "📦 Installing from Brewfile…"
+  brew bundle --file="$BREWFILE"
+  echo "✅ Brewfile packages installed."
+else
+  echo "ℹ️  No Brewfile found at $BREWFILE — skipping package installation."
+fi
