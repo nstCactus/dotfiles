@@ -1,0 +1,92 @@
+{{ if eq .chezmoi.hostname "ybianchi-Easyvista" }}
+[user]
+  email = ybianchi@easyvista.com
+  name = Yohann Bianchi
+{{ else }}
+[user]
+  email = nstcactus@gmail.com
+  name  = nstcactus
+{{ end }}
+[user]
+
+[push]
+  default            = simple
+  autoSetupRemote    = true
+  useForceIfIncludes = true
+  followTags         = true
+
+[rebase]
+  autoSquash = true
+  autoStash  = true
+  updateRefs = true
+
+[init]
+  defaultBranch = main
+
+[core]
+  excludesfile   = ~/.gitignore
+  autocrlf       = input
+  abbrev         = 8
+  hooksPath      = ~/.git-hooks/
+  attributesFile = ~/.gitattributes
+
+[alias]
+  co          = checkout
+  ci          = commit
+  st          = status
+  br          = branch
+  hist        = log --pretty=format:\"%h %ad | %s%d [%an]\" --graph --date=short
+  type        = cat-file -t
+  dump        = cat-file -p
+  rename-tag  = !sh -c 'set -e; git tag $2 $1; git tag -d $1; git push origin :refs/tags/$1; git push --tags' -
+  mr          = !sh -c 'git fetch $1 merge-requests/$2/head:mr-$1-$2 && git checkout mr-$1-$2' -
+  undo-commit = reset HEAD~1
+
+[difftool]
+  prompt = false
+
+[mergetool]
+  prompt = false
+
+[diff]
+  algorithm      = histogram
+  colorMoved     = plain
+  mnemonicPrefix = true
+  renames        = true
+
+[merge]
+  ff            = false
+  conflictstyle = zdiff3
+
+[log]
+  abbrevcommit = yes
+
+[commit]
+  template = ~/.gitmessage
+
+[rerere]
+  enabled = true
+  autoupdate = true
+
+[column]
+  ui = auto
+
+[branch]
+  sort = -committerdate
+
+[tag]
+  sort = version:refname
+
+[fetch]
+  prune     = true
+  pruneTags = true
+  all       = true
+
+[help]
+  autocorrect = prompt
+
+[pull]
+  rebase = true
+
+[merge "npm-lockfile"]
+  driver = bash -c 'git checkout --theirs -- package-lock.json && npm install'

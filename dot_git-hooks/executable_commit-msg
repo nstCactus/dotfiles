@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+set -e
+
+# Colors for output
+YELLOW='\033[0;33m'
+CYAN='\033[0;36m'
+RESET='\033[0m'
+
+# Determine the current hook name (e.g., "commit-msg")
+hook_name=$(basename "$0")
+
+# Use git rev-parse to get the .git directory path
+GIT_DIR=$(git rev-parse --git-dir)
+
+# Notify about linting the commit message
+echo -e "${YELLOW}Linting the commit message...${RESET}"
+
+# Run the global commitlint logic
+npx -- commitlint -x @nstcactus/commitlint-config --edit "$1"
+
+# Path to the repository-specific hook script
+local_hook="$GIT_DIR/hooks/$hook_name"
+
+# Run the local hook if it exists and is executable
+if [ -x "$local_hook" ]; then
+    echo -e "${CYAN}Running repository-specific $hook_name hook...${RESET}"
+    "$local_hook" "$@"
+fi
