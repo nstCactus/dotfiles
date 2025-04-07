@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+set -e
+
+archiveFilename="/home/nstcactus/Downloads/zen.linux-x86_64.tar.xz"
+
+if [[ ! -f "$archiveFilename" ]]; then
+  echo -e "\e[31mError: $archiveFilename does not exist. Please download Zen browser before running this script.\e[0m"
+  exit 1
+fi
+
+echo "Starting Zen browser update…"
+echo -e "  \e[33m⮡ Finish what you were doing and press any key to close Zen browser or Ctrl+C to abort.\e[0m"
+read -n 1 -s
+
+killall zen || true
+
+echo -n '  ⮡ Removing the previous zen version…'
+sudo rm -rf /opt/zen
+echo -e " \e[32mdone\e[0m"
+
+cd /opt
+
+echo -n '  ⮡ Extracting new version to /opt/zen…'
+sudo tar xf "$archiveFilename"
+echo -e " \e[32mdone\e[0m"
+
+echo -n '  ⮡ Cleaning up…'
+rm $archiveFilename
+echo -e " \e[32mdone\e[0m"
+
+echo -e '\e[34mUpdate sucessfull\e[0m'
