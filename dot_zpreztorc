@@ -20,6 +20,7 @@ zstyle ':prezto:load' pmodule \
   'environment' \
   'homebrew-env' \
   'terminal' \
+  'tilix' \
   'editor' \
   'history' \
   'directory' \
