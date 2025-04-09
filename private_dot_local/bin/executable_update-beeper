@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+set -e
+
+appImageName="beeper.AppImage"
+appImageTmpPath="/tmp/$appImageName"
+appImageFinalPath="$HOME/Applications/$appImageName"
+
+#url="https://download.beeper.com/linux/appImage/x64"
+url="https://api.beeper.com/desktop/download/linux/x64/stable/com.automattic.beeper.desktop"
+curl -L -o "$appImageTmpPath" "$url"
+
+if [[ ! -f "$appImageTmpPath" ]]; then
+  echo -e "\e[31mError: Couldn't download Beeper.\e[0m"
+  exit 1
+fi
+
+echo "Starting Beeper update…"
+echo -e "  \e[33m⮡ Finish what you were doing and press any key to close Beeper or Ctrl+C to abort.\e[0m"
+read -n 1 -s
+
+killall beeper || true
+
+echo -n '  ⮡ Removing the previous beeper version…'
+rm -rf "$appImageFinalPath"
+echo -e " \e[32mdone\e[0m"
+
+echo -n "  ⮡ Moving new version to $appImageFinalPath…"
+mv "$appImageTmpPath" "$appImageFinalPath"
+echo -e " \e[32mdone\e[0m"
+
+echo -n '  ⮡ Adjusting permissions…'
+chmod +x "$appImageFinalPath"
+echo -e " \e[32mdone\e[0m"
+
+echo -e '\e[34mUpdate sucessfull\e[0m'
