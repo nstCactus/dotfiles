@@ -2,7 +2,7 @@
 
 set -e
 
-archiveFilename="/home/nstcactus/Downloads/zen.linux-x86_64.tar.xz"
+archiveFilename="$HOME/Downloads/zen.linux-x86_64.tar.xz"
 
 if [[ ! -f "$archiveFilename" ]]; then
   echo -e "\e[31mError: $archiveFilename does not exist. Please download Zen browser before running this script.\e[0m"
