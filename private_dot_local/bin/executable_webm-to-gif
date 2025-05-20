@@ -1,0 +1,120 @@
+#!/bin/bash
+
+# Exit immediately if a command fails
+set -e
+
+# Function to clean up temporary files
+cleanup() {
+    echo "🧹 Cleaning up temporary files..."
+    rm -f "$palette_file" "$raw_gif"
+}
+trap cleanup EXIT
+
+# Check for required commands
+command -v ffmpeg >/dev/null 2>&1 || { echo "❌ ffmpeg is required but not installed. Aborting."; exit 1; }
+command -v gifsicle >/dev/null 2>&1 || { echo "❌ gifsicle is required but not installed. Aborting."; exit 1; }
+
+# Default values
+fps=15
+width=640
+dither="none"
+verbose=false
+
+# Help message
+usage() {
+    echo ""
+    echo "Usage: $0 [-f FPS] [-w WIDTH] [-d none|bayer|floyd] [-v|--verbose] input.webm output.gif"
+    echo "  -f FPS        Set the frame rate (default: 15)"
+    echo "  -w WIDTH      Set the output width (default: 640, height is auto-calculated)"
+    echo "  -d METHOD     Select dithering method (none, bayer, floyd; default: none)"
+    echo "  -v, --verbose Enable verbose mode (show ffmpeg output)"
+    exit 1
+}
+
+# Parse command-line options
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -f)
+            fps="$2";
+            shift 2
+        ;;
+        -w)
+            width="$2";
+            shift 2
+        ;;
+        -d)
+            if [[ "$2" == "none" || "$2" == "bayer" || "$2" == "floyd" ]]; then
+                dither="$2"
+            else
+                echo "❌ Invalid dithering method. Use 'none', 'bayer', or 'floyd'."
+                usage
+            fi
+            shift 2
+        ;;
+        -v|--verbose) verbose=true; shift ;;
+        -*)
+            echo "❌ Unknown option: $1"
+            usage
+        ;;
+        *)
+            if [[ -z "$input_file" ]]; then
+                input_file="$1"
+            elif [[ -z "$output_file" ]]; then
+                output_file="$1"
+            else
+                echo "❌ Unexpected argument: $1"
+                usage
+            fi
+            shift
+        ;;
+    esac
+done
+
+# Validate input arguments
+if [[ -z "$input_file" || -z "$output_file" ]]; then
+    usage
+fi
+
+# Temporary file paths
+palette_file="/tmp/palette.png"
+raw_gif="/tmp/raw_output.gif"
+
+# FFmpeg logging level
+ffmpeg_log_level="error"
+if [ "$verbose" = true ]; then
+    ffmpeg_log_level="info"
+fi
+
+# Generate an optimized palette
+echo "🎨 Generating color palette..."
+ffmpeg -loglevel "$ffmpeg_log_level" -i "$input_file" -vf "fps=${fps},scale=${width}:-1:flags=lanczos,palettegen" "$palette_file"
+
+# Map dithering method to FFmpeg filter options
+case "$dither" in
+    none) dither_option="dither=none";;
+    bayer) dither_option="dither=bayer";;
+    floyd) dither_option="dither=floyd_steinberg";;
+esac
+
+# Convert WebM to a raw GIF using the palette and dithering setting
+echo "🏗️ Converting WebM to GIF..."
+ffmpeg -loglevel "$ffmpeg_log_level" -i "$input_file" -i "$palette_file" -lavfi "fps=${fps},scale=${width}:-1:flags=lanczos [x]; [x][1:v] paletteuse=${dither_option}" "$raw_gif"
+
+# Optimize the GIF using gifsicle
+echo "⚡ Optimizing GIF..."
+gifsicle --optimize=5 --colors 256 "$raw_gif" > "$output_file"
+
+echo "✨ GIF created successfully: $output_file"
+
+# Calculate file sizes
+webm_size=$(stat --format="%s" "$input_file")
+gif_size=$(stat --format="%s" "$output_file")
+size_diff=$((gif_size - webm_size))
+percent_diff=$((size_diff * 100 / webm_size))
+
+# Display size comparison
+if [ "$size_diff" -gt 0 ]; then
+    echo "📈 GIF is larger than WebM: +${percent_diff}%"
+else
+    echo "📉 GIF is smaller than WebM: ${percent_diff}%"
+fi
