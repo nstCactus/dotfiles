@@ -8,10 +8,12 @@ if command -v brew >/dev/null 2>&1; then
 else
   {{ if eq .chezmoi.os "darwin" }}
   echo "🍎 Installing Homebrew …"
-  NONINTERACTIVE=1 /bin/bash -c \
-    "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   {{ else if eq .chezmoi.os "linux" }}
   echo "🐧 Installing Linuxbrew…"
+
+  echo "👤 Adding a linuxbrew user…"
+  sudo useradd -m -s /bin/bash linuxbrew
 
   # Install basic build tools
   if command -v apt >/dev/null 2>&1; then
@@ -26,19 +28,33 @@ else
     exit 1
   fi
 
-  NONINTERACTIVE=1 /bin/bash -c \
-    "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  sudo -u linuxbrew env NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  sudo -u linuxbrew bash -c 'echo >> ~/.bashrc'
+  sudo -u linuxbrew bash -c 'echo '\''eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'\'' >> ~/.bashrc'
+
+  echo "📟 Adding a /usr/local/bin/brew wrapper script to run brew as linuxbrew…"
+  cat <<EOF > /usr/local/bin/brew
+#!/bin/bash
+
+sudo -u linuxbrew /home/linuxbrew/.linuxbrew/bin/brew "\$@"
+EOF
+  chmod +x /usr/local/bin/brew
+
   {{ end }}
   echo "✅ Homebrew installed."
 fi
 
 # Set up Brewfile path
-BREWFILE="{{ .chezmoi.sourceDir }}/private_Brewfile"
+BREWFILE="{{ .chezmoi.homeDir }}/Brewfile"
 
-if [[ -f "$BREWFILE" ]]; then
+if [[ -e "$BREWFILE" ]]; then
+  TMP_BREWFILE="/tmp/Brewfile"
+  cp "$BREWFILE" "$TMP_BREWFILE"
+  chmod ugo+rw "$TMP_BREWFILE"
   echo "📦 Installing from Brewfile…"
-  brew bundle --file="$BREWFILE"
+  PATH="/usr/local/bin:$PATH" brew bundle --file="$TMP_BREWFILE"
   echo "✅ Brewfile packages installed."
+  rm "$TMP_BREWFILE"
 else
   echo "ℹ️  No Brewfile found at $BREWFILE — skipping package installation."
 fi

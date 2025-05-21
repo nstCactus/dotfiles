@@ -1,15 +1,27 @@
-# Detect Homebrew installation
-if [[ -x /opt/homebrew/bin/brew ]]; then
-  export BREW_PREFIX="/opt/homebrew"   # macOS (Apple Silicon)
-elif [[ -x /usr/local/bin/brew ]]; then
-  export BREW_PREFIX="/usr/local"       # macOS (Intel)
-elif [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
-  export BREW_PREFIX="/home/linuxbrew/.linuxbrew" # Linuxbrew (system-wide)
-elif [[ -x ~/.linuxbrew/bin/brew ]]; then
-  export BREW_PREFIX="$HOME/.linuxbrew" # Linuxbrew (user-local)
-else
-  return  # Exit if Homebrew is not installed
+BREW_LOCATIONS=(
+  /opt/homebrew/bin/brew              # macOS (Apple Silicon)
+  /usr/local/bin/brew                 # macOS (Intel)
+  /home/linuxbrew/.linuxbrew/bin/brew # Linuxbrew (system-wide)
+  "$HOME/.linuxbrew/bin/brew"         # Linuxbrew (user-local)
+)
+
+BREW_EXEC=""
+
+# Find brew executable
+for brewPathCandidate in "${BREW_LOCATIONS[@]}"; do
+  if [[ -x "$brewPathCandidate" ]]; then
+    BREW_EXEC="$brewPathCandidate"
+    break
+  fi
+done
+
+# Exit if brew not found
+if [[ -z "$BREW_EXEC" ]]; then
+  return
 fi
+
+# Use brew to determine prefix
+BREW_PREFIX="$("$BREW_EXEC" --prefix)"
 
 # Set up paths
 export PATH="$BREW_PREFIX/bin:$BREW_PREFIX/sbin:$PATH"
